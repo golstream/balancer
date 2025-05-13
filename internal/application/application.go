@@ -41,13 +41,11 @@ func Serve(
 		return ErrInvalidBalanceMethod
 	}
 
-	hc := healthcheck.New(
+	go healthcheck.New(
 		servers,
 		healthCheckInterval,
 		healthCheckTimeout,
-	)
-
-	go hc.Start(ctx)
+	).Start(ctx)
 
 	if err := multiplexer.Multiplex(
 		host,
