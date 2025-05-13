@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func init() {
+func Init() {
 	replacer := func(groups []string, a slog.Attr) slog.Attr {
 		if a.Key == slog.SourceKey {
 			source, ok := a.Value.Any().(*slog.Source)

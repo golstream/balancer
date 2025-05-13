@@ -1,4 +1,4 @@
-package server
+package multiplexer
 
 import (
 	"balancer/pkg/utils"
@@ -10,13 +10,12 @@ import (
 func Multiplex(
 	host string,
 	port int,
-	balancer balancer,
 	withLog bool) error {
 
 	serv := server{http.NewServeMux()}
 	addr := fmt.Sprintf("%s:%d", host, port)
 	serv.regHandler(withLog)
-	return serv.listen(addr, balancer)
+	return serv.listen(addr)
 }
 
 func (s *server) regHandler(withLog bool) {
@@ -24,19 +23,18 @@ func (s *server) regHandler(withLog bool) {
 	s.HandleFunc("/", h)
 }
 
-func (s *server) listen(host string, balancer balancer) error {
-	balanceAlgorithms = balancer
+func (s *server) listen(host string) error {
 	return http.ListenAndServe(host, s)
 }
 
 var (
 	defaultProxyHandler = func(w http.ResponseWriter, r *http.Request) {
-		balanceAlgorithms.Balance()
+		method.Balance()
 	}
 
 	loggedProxyHandler = func(w http.ResponseWriter, r *http.Request) {
-		slog.InfoContext(r.Context(), "request", "method", r.Method, "url", r.URL.String(), "header", r.Header)
-		balanceAlgorithms.Balance()
-		slog.InfoContext(r.Context(), "response", "method", r.Method, "url", r.URL.String(), "header", r.Header)
+		slog.InfoContext(r.Context(), "Request", "method", r.Method, "URL", r.URL.String(), "Header", r.Header)
+		method.Balance()
+		slog.InfoContext(r.Context(), "Response", "method", r.Method, "URL", r.URL.String(), "Header", r.Header)
 	}
 )
