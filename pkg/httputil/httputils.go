@@ -56,6 +56,15 @@ func DeleteWithCtx(
 	return doRequestWithCtx(ctx, http.MethodDelete, url, queries, body, headers, cookies, timeout)
 }
 
+func ReadBody(reader io.ReadCloser) ([]byte, error) {
+	bodyBytes, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return bodyBytes, nil
+}
+
 func doRequestWithCtx(
 	ctx context.Context,
 	method string,

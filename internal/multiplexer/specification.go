@@ -2,6 +2,7 @@ package multiplexer
 
 import (
 	"net/http"
+	"net/url"
 	"sync/atomic"
 )
 
@@ -18,7 +19,7 @@ var (
 )
 
 type balancer interface {
-	Balance()
+	Balance(string, *url.URL, url.Values, []byte, http.Header, []*http.Cookie) (int, []byte, error)
 }
 
 func SetBalanceMethod(balancer balancer) {

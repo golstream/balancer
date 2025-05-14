@@ -1,6 +1,7 @@
 package multiplexer
 
 import (
+	httputils "balancer/pkg/httputil"
 	"balancer/pkg/utils"
 	"fmt"
 	"log/slog"
@@ -28,8 +29,42 @@ func (s *server) listen(host string) error {
 }
 
 var (
-	defaultProxyHandler = func(w http.ResponseWriter, r *http.Request) {
-		method.Balance()
+	defaultProxyHandler = func(
+		w http.ResponseWriter,
+		r *http.Request) {
+
+		body, err := httputils.ReadBody(r.Body)
+		if err != nil {
+			return
+		}
+		if err = r.Body.Close(); err != nil {
+			return
+		}
+
+		statusCode, respBody, err :=
+			method.
+				Balance(
+					r.Method,
+					r.URL,
+					r.URL.Query(),
+					body,
+					r.Header,
+					r.Cookies(),
+				)
+		if err != nil {
+			return
+		}
+
+		w.WriteHeader(statusCode)
+
+		w.Header().Set(
+			httputils.ContentTypeHeader,
+			httputils.MIMEApplicationJSON,
+		)
+
+		if _, err = w.Write(respBody); err != nil {
+			return
+		}
 	}
 
 	loggedProxyHandler = func(w http.ResponseWriter, r *http.Request) {
