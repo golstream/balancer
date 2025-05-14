@@ -34,7 +34,7 @@ var (
 
 	loggedProxyHandler = func(w http.ResponseWriter, r *http.Request) {
 		slog.InfoContext(r.Context(), "Request", "Method", r.Method, "URL", r.URL.String(), "Header", r.Header)
-		method.Balance()
+		defaultProxyHandler(w, r)
 		slog.InfoContext(r.Context(), "Response", "Method", r.Method, "URL", r.URL.String(), "Header", r.Header)
 	}
 )

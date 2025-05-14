@@ -3,19 +3,20 @@ package healthcheck
 import (
 	"balancer/internal/multiplexer"
 	httputils "balancer/pkg/httputil"
+	"balancer/pkg/utils"
 	"context"
 	"time"
 )
 
 type HealthCheck struct {
-	urls       []string
+	initUrls   []string
 	interSec   time.Duration
 	timeoutSec time.Duration
 }
 
 func New(urls []string, intervalSec int, timeoutSec int) HealthCheck {
 	return HealthCheck{
-		urls:       urls,
+		initUrls:   urls,
 		interSec:   time.Duration(intervalSec) * time.Second,
 		timeoutSec: time.Duration(timeoutSec) * time.Second,
 	}
@@ -30,7 +31,8 @@ func (hc HealthCheck) Start(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			hc.checkURLs(ctx, hc.urls)
+			urls := multiplexer.GetSliceOfURLs()
+			hc.checkURLs(ctx, utils.Ternary(urls == nil, hc.initUrls, urls))
 		}
 	}
 }
