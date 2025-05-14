@@ -1,6 +1,7 @@
 package application
 
 import (
+	"balancer/internal/configuration"
 	"balancer/internal/constants"
 	"balancer/internal/healthcheck"
 	"balancer/internal/methods"
@@ -9,25 +10,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 )
 
-func Serve(
-	ctx context.Context,
-	host string,
-	port int,
-	balanceMethod string,
-	servers []string,
-	weights []string,
-	healthCheckInterval int,
-	healthCheckTimeout int,
-	withLog bool,
-) error {
-
+func Serve(ctx context.Context) error {
 	logger.Init()
 
-	m := constants.BalanceMethod(balanceMethod)
+	cfg, err := configuration.Init()
+	if err != nil {
+		slog.ErrorContext(ctx, "cfg parse failed",
+			slog.Any("error", err))
 
-	switch m {
+		return err
+	}
+
+	go healthcheck.New(
+		cfg.Servers,
+		cfg.HealthCheckInterval,
+		cfg.HealthCheckTimeout,
+	).Start(ctx)
+
+	switch cfg.Method {
 	case constants.RoundRobin:
 		method := &methods.RoundRobin{}
 		multiplexer.SetBalanceMethod(method)
@@ -41,16 +44,10 @@ func Serve(
 		return ErrInvalidBalanceMethod
 	}
 
-	go healthcheck.New(
-		servers,
-		healthCheckInterval,
-		healthCheckTimeout,
-	).Start(ctx)
-
-	if err := multiplexer.Multiplex(
-		host,
-		port,
-		withLog,
+	if err = multiplexer.Multiplex(
+		cfg.Host,
+		cfg.Port,
+		cfg.WithLog,
 	); err != nil {
 		return fmt.Errorf("multiplexing failed: %w", err)
 	}

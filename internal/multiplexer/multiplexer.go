@@ -9,7 +9,7 @@ import (
 
 func Multiplex(
 	host string,
-	port int,
+	port int64,
 	withLog bool) error {
 
 	serv := server{http.NewServeMux()}
@@ -33,8 +33,8 @@ var (
 	}
 
 	loggedProxyHandler = func(w http.ResponseWriter, r *http.Request) {
-		slog.InfoContext(r.Context(), "Request", "method", r.Method, "URL", r.URL.String(), "Header", r.Header)
+		slog.InfoContext(r.Context(), "Request", "Method", r.Method, "URL", r.URL.String(), "Header", r.Header)
 		method.Balance()
-		slog.InfoContext(r.Context(), "Response", "method", r.Method, "URL", r.URL.String(), "Header", r.Header)
+		slog.InfoContext(r.Context(), "Response", "Method", r.Method, "URL", r.URL.String(), "Header", r.Header)
 	}
 )
