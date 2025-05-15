@@ -2,21 +2,20 @@ package methods
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
+	"sync/atomic"
 )
 
 type weightedServer struct {
-	Host          string
-	Weight        int
-	CurrentWeight int
+	Host           string
+	Weight         int
+	RequestCounter atomic.Int32
 }
 
 type WeightedRoundRobin struct {
-	servers []*weightedServer
-	mu      sync.Mutex
+	servers       []*weightedServer
+	totalRequests atomic.Int32
 }
 
 func NewWeightedRoundRobin(hosts []string, weights []int) (*WeightedRoundRobin, error) {
@@ -43,46 +42,46 @@ func (w *WeightedRoundRobin) Balance(
 	headers http.Header,
 	cookies []*http.Cookie,
 ) (int, []byte, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	totalReq := w.totalRequests.Add(1)
 
-	if len(w.servers) == 0 {
-		return 0, nil, fmt.Errorf("no servers available")
-	}
-
-	bestIndex, best := w.selectBestServer()
-	if best == nil {
-		return 0, nil, fmt.Errorf("unable to select server")
-	}
-
-	u.Host = best.Host
-	return bestIndex, nil, nil
-}
-
-func (w *WeightedRoundRobin) selectBestServer() (int, *weightedServer) {
 	var (
-		totalWeight int
-		best        *weightedServer
-		bestIndex   = -1
+		bestIndex = -1
+		minOver   = 1.1
 	)
 
-	for i, s := range w.servers {
-		s.CurrentWeight += s.Weight
+	totalWeight := 0
+	for _, s := range w.servers {
 		totalWeight += s.Weight
+	}
 
-		if best == nil || s.CurrentWeight > best.CurrentWeight {
-			best = s
+	for i, s := range w.servers {
+		serverReq := float64(s.RequestCounter.Load())
+		expectedShare := float64(s.Weight) / float64(totalWeight)
+		actualShare := serverReq / float64(totalReq)
+
+		over := actualShare - expectedShare
+		if over <= 0 {
+			s.RequestCounter.Add(1)
+			u.Host = s.Host
+			return i, nil, nil
+		}
+
+		if over < minOver {
 			bestIndex = i
+			minOver = over
 		}
 	}
 
-	if best != nil {
-		best.CurrentWeight -= totalWeight
+	if bestIndex != -1 {
+		s := w.servers[bestIndex]
+		s.RequestCounter.Add(1)
+		u.Host = s.Host
+		return bestIndex, nil, nil
 	}
 
-	return bestIndex, best
+	return 0, nil, errors.New("no servers available")
 }
 
 var (
-	ErrWeightsIsLessThenHosts = errors.New("len of weights is less then hosts len")
+	ErrWeightsIsLessThenHosts = errors.New("len of weights is less than hosts len")
 )
