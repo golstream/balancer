@@ -17,7 +17,7 @@ func GetWithCtx(
 	cookies []*http.Cookie,
 	timeout time.Duration,
 ) (*Response, error) {
-	return doRequestWithCtx(ctx, http.MethodGet, url, queries, nil, headers, cookies, timeout)
+	return DoRequestWithCtx(ctx, http.MethodGet, url, queries, nil, headers, cookies, timeout)
 }
 
 func PostWithCtx(
@@ -29,7 +29,7 @@ func PostWithCtx(
 	cookies []*http.Cookie,
 	timeout time.Duration,
 ) (*Response, error) {
-	return doRequestWithCtx(ctx, http.MethodPost, url, queries, body, headers, cookies, timeout)
+	return DoRequestWithCtx(ctx, http.MethodPost, url, queries, body, headers, cookies, timeout)
 }
 
 func PutWithCtx(
@@ -41,7 +41,7 @@ func PutWithCtx(
 	cookies []*http.Cookie,
 	timeout time.Duration,
 ) (*Response, error) {
-	return doRequestWithCtx(ctx, http.MethodPut, url, queries, body, headers, cookies, timeout)
+	return DoRequestWithCtx(ctx, http.MethodPut, url, queries, body, headers, cookies, timeout)
 }
 
 func DeleteWithCtx(
@@ -53,7 +53,7 @@ func DeleteWithCtx(
 	cookies []*http.Cookie,
 	timeout time.Duration,
 ) (*Response, error) {
-	return doRequestWithCtx(ctx, http.MethodDelete, url, queries, body, headers, cookies, timeout)
+	return DoRequestWithCtx(ctx, http.MethodDelete, url, queries, body, headers, cookies, timeout)
 }
 
 func ReadBody(reader io.ReadCloser) ([]byte, error) {
@@ -65,7 +65,7 @@ func ReadBody(reader io.ReadCloser) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-func doRequestWithCtx(
+func DoRequestWithCtx(
 	ctx context.Context,
 	method string,
 	url string,

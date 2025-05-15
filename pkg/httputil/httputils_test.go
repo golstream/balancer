@@ -53,7 +53,7 @@ func TestGetWithCtx_Timeout(t *testing.T) {
 
 func TestDoRequestWithCtx_InvalidURL(t *testing.T) {
 	ctx := context.Background()
-	_, err := doRequestWithCtx(ctx, http.MethodGet, ":", nil, nil, nil, nil, time.Second)
+	_, err := DoRequestWithCtx(ctx, http.MethodGet, ":", nil, nil, nil, nil, time.Second)
 	if err == nil {
 		t.Fatal("expected error for malformed URL")
 	}
@@ -65,7 +65,7 @@ func TestDoRequestWithCtx_NilResponse(t *testing.T) {
 	server.Close()
 
 	ctx := context.Background()
-	_, err := doRequestWithCtx(ctx, http.MethodGet, server.URL, nil, nil, nil, nil, time.Second)
+	_, err := DoRequestWithCtx(ctx, http.MethodGet, server.URL, nil, nil, nil, nil, time.Second)
 	if err == nil {
 		t.Fatal("expected error due to closed server")
 	}
