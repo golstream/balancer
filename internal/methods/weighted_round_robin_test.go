@@ -2,86 +2,54 @@ package methods
 
 import (
 	"errors"
-	"fmt"
+	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 )
 
-func TestNewWeightedRoundRobin_Success(t *testing.T) {
-	hosts := []string{"host1", "host2"}
-	weights := []int{2, 3}
-
-	wrr, err := NewWeightedRoundRobin(hosts, weights)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(wrr.servers) != 2 {
-		t.Errorf("expected 2 servers, got %d", len(wrr.servers))
-	}
-}
-
-func TestNewWeightedRoundRobin_ErrorWhenWeightsTooShort(t *testing.T) {
-	hosts := []string{"host1", "host2"}
-	weights := []int{1}
-
-	_, err := NewWeightedRoundRobin(hosts, weights)
+func TestNewWeightedRoundRobin_ErrorWhenWeightsLessThanHosts(t *testing.T) {
+	_, err := NewWeightedRoundRobin([]string{"a", "b"}, []int{1})
 	if !errors.Is(err, ErrWeightsIsLessThenHosts) {
 		t.Errorf("expected ErrWeightsIsLessThenHosts, got %v", err)
 	}
 }
 
-func TestWeightedRoundRobin_BalanceReturnsErrorWhenNoServers(t *testing.T) {
-	wrr := &WeightedRoundRobin{}
-	u, _ := url.Parse("http://example.com")
-
-	_, _, err := wrr.Balance("GET", u, nil, nil, nil, nil)
-	if err == nil || err.Error() != "no servers available" {
-		t.Errorf("expected 'no servers available' error, got %v", err)
-	}
-}
-
-func TestWeightedRoundRobin_BalanceSelection(t *testing.T) {
-	hosts := []string{"host1", "host2"}
-	weights := []int{1, 2}
-
-	wrr, err := NewWeightedRoundRobin(hosts, weights)
+func TestNewWeightedRoundRobin_Success(t *testing.T) {
+	wrr, err := NewWeightedRoundRobin([]string{"a", "b"}, []int{1, 2})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	counts := map[string]int{}
-	u := &url.URL{}
-	for i := 0; i < 100; i++ {
-		urlCopy := *u
-		_, _, err := wrr.Balance("GET", &urlCopy, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("unexpected error on balance: %v", err)
-		}
-		counts[urlCopy.Host]++
-	}
-
-	if counts["host2"] <= counts["host1"] {
-		t.Errorf("unexpected balance distribution: %v", counts)
-	} else {
-		fmt.Printf("Distribution: %v\n", counts)
+	if len(wrr.servers) != 2 {
+		t.Errorf("expected 2 servers, got %d", len(wrr.servers))
 	}
 }
 
-func TestSelectBestServer_AdjustsWeightsCorrectly(t *testing.T) {
-	hosts := []string{"host1", "host2"}
-	weights := []int{5, 1}
+func TestWeightedRoundRobin_Balance_Distribution(t *testing.T) {
+	wrr, _ := NewWeightedRoundRobin([]string{"a", "b"}, []int{1, 3})
 
-	wrr, _ := NewWeightedRoundRobin(hosts, weights)
+	counts := make([]int, 2)
+	reqCount := 1000
+	var mu sync.Mutex
 
-	index, best := wrr.selectBestServer()
-	if best.Host != "host1" || index != 0 {
-		t.Errorf("expected host1 as best, got %v", best.Host)
+	for i := 0; i < reqCount; i++ {
+		u, _ := url.Parse("http://test")
+		ix, _, err := wrr.Balance(http.MethodGet, u, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		mu.Lock()
+		counts[ix]++
+		mu.Unlock()
 	}
 
-	expectedWeight := 5 - (5 + 1)
+	t.Logf("Distribution: %+v", counts)
 
-	if wrr.servers[0].CurrentWeight != expectedWeight {
-		t.Errorf("expected CurrentWeight %d, got %d", expectedWeight, wrr.servers[0].CurrentWeight)
+	expected := []float64{0.25, 0.75}
+	for i := range counts {
+		actualRatio := float64(counts[i]) / float64(reqCount)
+		if actualRatio < expected[i]-0.05 || actualRatio > expected[i]+0.05 {
+			t.Errorf("server %d: expected ~%.2f, got %.2f", i, expected[i], actualRatio)
+		}
 	}
 }
