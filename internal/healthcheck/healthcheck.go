@@ -43,7 +43,13 @@ func (hc HealthCheck) checkURLs(ctx context.Context, urls []string) {
 	)
 
 	for _, url := range urls {
-		resp, err := httputils.GetWithCtx(ctx, url, nil, nil, nil, hc.timeoutSec)
+		resp, err := httputils.GetWithCtx(
+			ctx,
+			url,
+			nil,
+			nil,
+			nil,
+			hc.timeoutSec)
 		if err != nil {
 			continue
 		}

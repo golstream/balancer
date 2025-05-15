@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  balancer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: balancer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - METHOD=round_robin
+      - SERVERS=http://host1:8123,http://host2:8123
+      - WEIGHTS=1,2
+      - HEALTHCHECK_INTERVAL=60
+      - HEALTHCHECK_TIMEOUT=15
+      - WITH_LOG=true
