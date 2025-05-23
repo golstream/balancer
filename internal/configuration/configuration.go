@@ -13,7 +13,7 @@ type config struct {
 
 	Method  method  `env:"METHOD,required"`
 	Servers servers `env:"SERVERS,required"`
-	Weights weights `env:"WEIGHTS, required"`
+	Weights weights `env:"WEIGHTS"`
 
 	HealthCheckInterval int `env:"HEALTHCHECK_INTERVAL" envDefault:"60"`
 	HealthCheckTimeout  int `env:"HEALTHCHECK_TIMEOUT"  envDafault:"15"`

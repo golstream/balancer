@@ -2,18 +2,21 @@ package methods
 
 import (
 	"balancer/internal/constants"
-	"balancer/internal/multiplexer"
+	"math"
 	"net/http"
 	"net/url"
 	"sync/atomic"
 )
 
 type RoundRobin struct {
+	hosts []string
 	index atomic.Int32
 }
 
-func NewRoundRobin() *RoundRobin {
-	return &RoundRobin{}
+func NewRoundRobin(hosts []string) *RoundRobin {
+	return &RoundRobin{
+		hosts: hosts,
+	}
 }
 
 func (r *RoundRobin) Balance(
@@ -25,7 +28,7 @@ func (r *RoundRobin) Balance(
 	cookies []*http.Cookie) (int, []byte, error) {
 
 	// atomic receiving and casting any to []string
-	hosts := multiplexer.GetSliceOfURLs()
+	hosts := r.hosts
 
 	if len(hosts) == 0 {
 		return 0, nil, constants.ErrNoHosts
@@ -33,7 +36,7 @@ func (r *RoundRobin) Balance(
 
 	selected := r.index.Add(1) % int32(len(hosts))
 	if selected < 0 {
-		selected = -selected
+		selected = int32(math.Abs(float64(selected)))
 	}
 
 	url.Host = hosts[selected]

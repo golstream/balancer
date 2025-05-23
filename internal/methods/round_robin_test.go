@@ -10,7 +10,7 @@ import (
 func TestRoundRobin_NoHosts_ReturnsError(t *testing.T) {
 	mockHosts = []string{}
 
-	r := NewRoundRobin()
+	r := NewRoundRobin(mockHosts)
 	u, _ := url.Parse("http://placeholder")
 
 	_, _, err := r.Balance("GET", u, nil, nil, nil, nil)
@@ -22,7 +22,7 @@ func TestRoundRobin_NoHosts_ReturnsError(t *testing.T) {
 func TestRoundRobin_CyclesThroughHosts(t *testing.T) {
 	mockHosts = []string{"host1", "host2", "host3"}
 
-	r := NewRoundRobin()
+	r := NewRoundRobin(mockHosts)
 	u := &url.URL{}
 
 	calls := 6
@@ -44,7 +44,7 @@ func TestRoundRobin_CyclesThroughHosts(t *testing.T) {
 func TestRoundRobin_IndexNeverNegative(t *testing.T) {
 	mockHosts = []string{"host1", "host2"}
 
-	r := NewRoundRobin()
+	r := NewRoundRobin(mockHosts)
 	r.index.Store(-100)
 
 	u := &url.URL{}
@@ -61,7 +61,3 @@ func TestRoundRobin_IndexNeverNegative(t *testing.T) {
 var (
 	mockHosts []string
 )
-
-func mockGetSliceOfURLs() []string {
-	return mockHosts
-}
