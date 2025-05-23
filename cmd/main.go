@@ -19,8 +19,7 @@ func main() {
 	defer cancel()
 
 	go func() {
-		log.Fatalf("service is down %w",
-			application.Serve(ctx))
+		log.Fatal(application.Serve(ctx))
 	}()
 
 	select {}
